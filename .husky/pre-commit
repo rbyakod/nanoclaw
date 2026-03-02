@@ -1,1 +1,13 @@
 npm run format:fix
+
+# Block accidental .env commits
+if git diff --cached --name-only | grep -qE "(^|/)\.env$"; then
+  echo "ERROR: Attempt to commit .env file blocked. Remove it: git reset HEAD .env"
+  exit 1
+fi
+
+# Block Anthropic API key patterns in staged content
+if git diff --cached | grep -qE "sk-ant-api[0-9]+-[A-Za-z0-9_-]{90,}"; then
+  echo "ERROR: Possible Anthropic API key detected in staged changes. Remove the secret before committing."
+  exit 1
+fi

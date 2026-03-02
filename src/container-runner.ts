@@ -17,7 +17,7 @@ import {
 } from './config.js';
 import { readEnvFile } from './env.js';
 import { resolveGroupFolderPath, resolveGroupIpcPath } from './group-folder.js';
-import { logger } from './logger.js';
+import { logger, redactSecrets } from './logger.js';
 import {
   CONTAINER_RUNTIME_BIN,
   readonlyMountArgs,
@@ -28,6 +28,27 @@ import { RegisteredGroup } from './types.js';
 
 // Sentinel markers for robust output parsing (must match agent-runner)
 const OUTPUT_START_MARKER = '---NANOCLAW_OUTPUT_START---';
+
+const MAX_LOG_FILES_PER_GROUP = 50;
+
+function rotateLogsDir(logsDir: string): void {
+  try {
+    const files = fs
+      .readdirSync(logsDir)
+      .filter((f) => f.startsWith('container-') && f.endsWith('.log'))
+      .map((f) => ({ name: f, path: path.join(logsDir, f) }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    if (files.length > MAX_LOG_FILES_PER_GROUP) {
+      const toDelete = files.slice(0, files.length - MAX_LOG_FILES_PER_GROUP);
+      for (const file of toDelete) {
+        fs.unlinkSync(file.path);
+      }
+    }
+  } catch {
+    // Best-effort — don't fail the run if rotation fails
+  }
+}
 const OUTPUT_END_MARKER = '---NANOCLAW_OUTPUT_END---';
 
 export interface ContainerInput {
@@ -482,9 +503,19 @@ export async function runContainerAgent(
       const isError = code !== 0;
 
       if (isVerbose || isError) {
+        // Never write the prompt (user message content) to disk — PII
+        const inputSummary = {
+          promptLength: input.prompt.length,
+          sessionId: input.sessionId || 'new',
+          groupFolder: input.groupFolder,
+          chatJid: input.chatJid,
+          isMain: input.isMain,
+          isScheduledTask: input.isScheduledTask,
+          assistantName: input.assistantName,
+        };
         logLines.push(
-          `=== Input ===`,
-          JSON.stringify(input, null, 2),
+          `=== Input Summary ===`,
+          JSON.stringify(inputSummary, null, 2),
           ``,
           `=== Container Args ===`,
           containerArgs.join(' '),
@@ -498,10 +529,10 @@ export async function runContainerAgent(
             .join('\n'),
           ``,
           `=== Stderr${stderrTruncated ? ' (TRUNCATED)' : ''} ===`,
-          stderr,
+          redactSecrets(stderr),
           ``,
           `=== Stdout${stdoutTruncated ? ' (TRUNCATED)' : ''} ===`,
-          stdout,
+          redactSecrets(stdout),
         );
       } else {
         logLines.push(
@@ -518,16 +549,18 @@ export async function runContainerAgent(
       }
 
       fs.writeFileSync(logFile, logLines.join('\n'));
+      rotateLogsDir(logsDir);
       logger.debug({ logFile, verbose: isVerbose }, 'Container log written');
 
       if (code !== 0) {
+        // Don't log full stdout/stderr to pino — they may contain user messages (PII).
+        // The log file on disk has full details for debugging.
         logger.error(
           {
             group: group.name,
             code,
             duration,
-            stderr,
-            stdout,
+            stderrTail: redactSecrets(stderr.slice(-200)),
             logFile,
           },
           'Container exited with error',
@@ -591,8 +624,8 @@ export async function runContainerAgent(
         logger.error(
           {
             group: group.name,
-            stdout,
-            stderr,
+            stdoutTail: redactSecrets(stdout.slice(-500)),
+            stderrTail: redactSecrets(stderr.slice(-200)),
             error: err,
           },
           'Failed to parse container output',

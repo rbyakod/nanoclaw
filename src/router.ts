@@ -10,10 +10,13 @@ export function escapeXml(s: string): string {
 }
 
 export function formatMessages(messages: NewMessage[]): string {
-  const lines = messages.map(
-    (m) =>
-      `<message sender="${escapeXml(m.sender_name)}" time="${m.timestamp}">${escapeXml(m.content)}</message>`,
-  );
+  const lines = messages.map((m) => {
+    // trusted="true" means the message came from the authenticated device owner
+    // (is_from_me set by the WhatsApp layer via msg.key.fromMe).
+    // Claude is instructed in CLAUDE.md to only act on trusted messages.
+    const trusted = m.is_from_me ? 'true' : 'false';
+    return `<message sender="${escapeXml(m.sender_name)}" time="${m.timestamp}" trusted="${trusted}">${escapeXml(m.content)}</message>`;
+  });
   return `<messages>\n${lines.join('\n')}\n</messages>`;
 }
 
