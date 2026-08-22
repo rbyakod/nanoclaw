@@ -23,12 +23,9 @@ export const logger = pino({
   transport: { target: 'pino-pretty', options: { colorize: true } },
   serializers: {
     // Redact secrets from any string fields named stderr/stdout/error/err
-    stderr: (v: unknown) =>
-      typeof v === 'string' ? redactSecrets(v) : v,
-    stdout: (v: unknown) =>
-      typeof v === 'string' ? redactSecrets(v) : v,
-    error: (v: unknown) =>
-      typeof v === 'string' ? redactSecrets(v) : v,
+    stderr: (v: unknown) => (typeof v === 'string' ? redactSecrets(v) : v),
+    stdout: (v: unknown) => (typeof v === 'string' ? redactSecrets(v) : v),
+    error: (v: unknown) => (typeof v === 'string' ? redactSecrets(v) : v),
   },
 });
 
