@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `08ff93ed`
+- Built from commit: `a6e1851f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -283,7 +283,7 @@ Cohesion: 0.50
 Nodes (3): post-checkout script, GRAPHIFY_REBUILD_LOG, PYTHONHASHSEED
 
 ## Knowledge Gaps
-- **260 isolated node(s):** `SECRET_PATTERNS`, `Handler`, `clientRef`, `TextChannel`, `envConfig` (+255 more)
+- **260 isolated node(s):** `Handler`, `clientRef`, `TextChannel`, `envConfig`, `ASSISTANT_HAS_OWN_NUMBER` (+255 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -291,12 +291,12 @@ Nodes (3): post-checkout script, GRAPHIFY_REBUILD_LOG, PYTHONHASHSEED
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `line()` connect `dashboard.js` to `add-gmail/modify/src/index.ts`, `src/container-runner.ts`, `modify/container/agent-runner/src/index.ts`, `container/agent-runner/src/index.ts`?**
-  _High betweenness centrality (0.062) - this node is a cross-community bridge._
+  _High betweenness centrality (0.074) - this node is a cross-community bridge._
 - **Why does `runContainerAgent()` connect `src/container-runner.ts` to `task-scheduler.ts`, `src/index.ts`, `group-folder.ts`, `dashboard.js`?**
-  _High betweenness centrality (0.053) - this node is a cross-community bridge._
+  _High betweenness centrality (0.062) - this node is a cross-community bridge._
 - **Why does `runContainerAgent()` connect `add-gmail/modify/src/index.ts` to `dashboard.js`?**
-  _High betweenness centrality (0.021) - this node is a cross-community bridge._
-- **What connects `SECRET_PATTERNS`, `Handler`, `clientRef` to the rest of the system?**
+  _High betweenness centrality (0.022) - this node is a cross-community bridge._
+- **What connects `Handler`, `clientRef`, `TextChannel` to the rest of the system?**
   _260 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `skills-engine/index.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.05804953560371517 - nodes in this community are weakly interconnected._
